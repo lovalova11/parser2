@@ -17,28 +17,35 @@ if response.status_code == 200:
             print(f'Категория найдена {link.text.strip()}')
             break
     if target_url:
-        response2 = requests.get(target_url)
-        if response2.status_code == 200:
-            soup2 = BeautifulSoup(response2.content, 'html.parser')
-            cards = soup2.find_all('div', class_="quote")
-            data=[]
-            for card in cards:
-                content_tag = card.find('span', class_='text')
-                author_tag = card.find('small', class_='author')
-                content = content_tag.text.strip()
-                author = author_tag.text.strip()
-                data.append({
-                    'content': content,
-                    'author': author
-                })
-            if data:
-                df = pd.DataFrame(data, columns=['content', 'author'])
-                df.to_excel('data.xlsx', index=False)
-                print(f'Всё прошлое успешно. {len(data)} цитат добавлено')
+        data = []
+        while target_url:
+            response2 = requests.get(target_url)
+            if response2.status_code == 200:
+                soup2 = BeautifulSoup(response2.content, 'html.parser')
+                cards = soup2.find_all('div', class_="quote")
+                for card in cards:
+                    content_tag = card.find('span', class_='text')
+                    author_tag = card.find('small', class_='author')
+                    content = content_tag.text.strip()
+                    author = author_tag.text.strip()
+                    data.append({
+                        'content': content,
+                        'author': author
+                    })
+                next_button = soup2.find('nav').find('li', class_='next')
+                if next_button:
+                    target_url = base_url + soup2.find('nav').find('li', class_='next').find('a').get('href')
+                else:
+                    target_url = None
             else:
-                print('Ошибка')
+                print('Ошибка в статус коде')
+                break
+        if data:
+            df = pd.DataFrame(data, columns=['content', 'author'])
+            df.to_excel('data.xlsx', index=False)
+            print(f'Всё прошлое успешно. {len(data)} цитат добавлено')
         else:
-            print('Ошибка в статус коде')
+            print('Ошибка')
     else:
         print('такого нет')
 
